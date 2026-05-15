@@ -4,17 +4,30 @@
 An end-to-end ML web application that detects accident-prone zones on a route and predicts crash severity in real time. Built with Flask, DBSCAN clustering, and a Random Forest classifier trained on real accident data.
 
 ---
+## 📌 Overview
 
-## 🎯 What It Does
+Road accidents are often concentrated in specific high-risk zones due to factors like traffic density, road conditions, and environmental variables.
 
-- Plots **accident black spots** on an interactive map using DBSCAN clustering
-- Takes a **start and end location**, fetches the real driving route via OpenRouteService API
-- Checks if the route passes through any danger zones and returns **HIGH / MEDIUM / LOW** risk alerts
-- Predicts **crash severity** (Slight / Serious / Fatal) using a trained Random Forest model
-- Supports **place name search** via geocoding (e.g. "Pune" → lat/lng)
+This project analyzes historical accident data to:
+- Detect **accident hotspots (black spots)**
+- Evaluate **route safety**
+- Predict **severity of potential crashes**
+
+👉 Goal: Assist users in making **safer travel decisions**
 
 ---
 
+## ✨ Key Features
+
+| Feature | Description |
+|--------|------------|
+| 1. Accident Hotspot Detection | Uses DBSCAN clustering to identify high-risk zones |
+| 2. Route Risk Analysis | Checks if a route passes through dangerous areas |
+| 3. Risk Alerts | Classifies routes as HIGH / MEDIUM / LOW risk |
+| 4. Severity Prediction | Predicts crash severity (Slight / Serious / Fatal) |
+| 5. Geocoding Support | Converts place names into coordinates |
+
+---
 ## 🗂️ Project Structure
 
 ```
@@ -47,46 +60,63 @@ accident-detection/
 ```
 
 ---
+## How it Works
+## ML Pipeline
 
-## ⚙️ ML Pipeline
-
-### 1. Preprocessing (`preprocess.py`)
-- Cleans raw accident CSV — drops nulls, encodes categoricals
-- Geocodes accident locations to lat/lng coordinates
+### 1. Data Preprocessing (`preprocess.py`)
+- Cleans raw data set (removing missing values, encoding categoricals) 
+- Geocoding accident sites to lat/lon coordinates
 
 ### 2. DBSCAN Clustering (`clustering.py`)
-- Uses **Haversine distance** with `eps=40km`, `min_samples=8`
-- Each cluster becomes a **black spot** with:
-  - Risk score = weighted combo of severity + casualties + accident count
-  - Risk level: HIGH (≥6), MEDIUM (≥3.5), LOW (<3.5)
-  - Metadata: top weather condition, road type, cause, junction type
+- Applies **Haversine Distance** algorithm with `eps=40km` and `min_samples=8` 
+- Every cluster is a **black spot** having:
+  - A **Risk Score** (weighted average of severity, casualties, and accidents)
+  - **Risk Level** (HIGH ≥6, MEDIUM ≥3.5, LOW <3.5)
+  - Meta-data includes top weather condition, road type, accident cause, and junction type
 
-### 3. Random Forest Classifier (`risk_model.py`)
-- **Target**: Accident severity (1=Slight, 2=Serious, 3=Fatal)
-- **Features**: hour, day, weather, road type, road condition, lighting, vehicles, casualties, junction, cause
-- **Config**: 200 estimators, max depth 12, balanced class weights
-- Saved via `joblib` for inference
+### 3. Random Forest Model (`risk_model.py`) 
+- **Target Variable**: Severity (1=Slight, 2=Serious, 3=Fatal)
+- **Features Used**: hour, day, weather, road type, road surface, lighting, number of vehicles involved, number of casualties, junction and cause of accident
+- **Config**: 200 estimators, maximum tree depth of 12, balance classes
+- Model serialized using `joblib`
 
-### 4. Route Risk Checker (`route_checker.py`)
-- Fetches driving route from OpenRouteService API
-- Uses **Shapely LineString** to check if any black spot falls within 25km buffer of route
-- Returns sorted alerts + overall risk summary
+### 4. Checking Risks On The Route (`route_checker.py`) 
+- Gets driving route data from OpenRouteService API 
+- Uses **Shapely LineString** to see if any of the black spots is within a 25 km buffer around the route
+- Gives sorted alerts and total risk assessment
 
+---
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Flask, Python 3.12 |
+| ML | Scikit-learn (DBSCAN, Random Forest), Pandas, NumPy |
+| Geospatial | Shapely, GeoPandas, Geopy |
+| Routing API | OpenRouteService |
+| Frontend | Leaflet.js, HTML/CSS/JS |
+| Model Storage | Joblib |
+
+---
 ---
 
 ## 🚀 How to Run
 
+## ⚙️ Installation & Setup
 ### 1. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Add your ORS API key
+### 2. Add OpenRouteService API key
 In `ml/route_checker.py`, replace:
 ```python
 ORS_API_KEY = "YOUR_FREE_API_KEY_HERE"
 ```
-Get a free key at [openrouteservice.org](https://openrouteservice.org)
+Get a free key from: [openrouteservice.org](https://openrouteservice.org)
 
 ### 3. (Optional) Retrain the model
 ```bash
@@ -106,14 +136,16 @@ Visit `http://localhost:5000`
 
 ## 🌐 API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Map UI |
-| `POST` | `/api/check-route` | Check route for danger zones |
-| `GET` | `/api/black-spots` | Get all accident clusters |
-| `POST` | `/api/geocode` | Convert place name to lat/lng |
+| Method | Endpoint           | Purpose                         |
+| ------ | ------------------ | ------------------------------- |
+| GET    | `/`                | Load map interface              |
+| POST   | `/api/check-route` | Check route risk                |
+| GET    | `/api/black-spots` | Retrieve accident clusters      |
+| POST   | `/api/geocode`     | Convert location to coordinates |
 
-### Example — Check Route
+
+### Example — Check Route (API Response)
+## Request
 ```json
 POST /api/check-route
 {
@@ -123,38 +155,61 @@ POST /api/check-route
   "end_lng": 72.8692
 }
 ```
-
+## Response
 ```json
 Response:
 {
   "total_danger_zones": 3,
   "summary": {
     "overall_risk": "HIGH",
-    "message": "🚨 2 HIGH risk zone(s) on your route. Drive with caution!",
+    "message": "2 HIGH risk zone(s) on your route. Drive with caution!",
     "color": "red"
   },
   "alerts": [...],
   "route": [...]
 }
 ```
+---
+## 📸 Screenshots
+🗺️ Map Interface
+
+<img width="1920" height="905" alt="Screenshot 2026-05-15 113240" src="https://github.com/user-attachments/assets/b340685e-5482-458c-9ec1-5ed1556ced0c" />
+
+🚦 Route Risk Detection
+
+<img width="1920" height="917" alt="Screenshot 2026-05-15 121040" src="https://github.com/user-attachments/assets/5ab01b86-61f3-4b75-9086-21bdcaf1522f" />
+
+📊 Prediction Output
+
+<img width="1920" height="912" alt="Screenshot 2026-05-15 121150" src="https://github.com/user-attachments/assets/1053fb20-60e1-47a9-92f2-8da901750944" />
+
+<img width="1920" height="908" alt="Screenshot 2026-05-15 113900" src="https://github.com/user-attachments/assets/a63ac702-7cd6-40fd-867c-a1a411e0beb1" />
+
+---
+---
+
+## 🚧 Future Improvements
+- Real-time traffic integration
+- Live weather-based risk updates
+- Mobile application version
+- Voice-based alerts
+- Deep learning models
+- Cloud deployment (AWS / Render)
 
 ---
 
-## 🛠️ Tech Stack
+## 👥 Team & Contributions
 
-| Layer | Technology |
-|---|---|
-| Backend | Flask, Python 3.12 |
-| ML | Scikit-learn (DBSCAN, Random Forest), Pandas, NumPy |
-| Geospatial | Shapely, GeoPandas, Geopy |
-| Routing API | OpenRouteService |
-| Frontend | Leaflet.js, HTML/CSS/JS |
-| Model Storage | Joblib |
+This project was developed as part of a college project.
 
----
+| Name | Role | Contribution |
+|------|------|-------------|
+| Vedant | Lead Developer | Designed and implemented the full system including ML models, clustering, backend APIs, and integration |
+| Trushna | Research & Documentation | Contributed to research paper development, system analysis,added features and improved README |
+| Piyush | Research & Analysis | Assisted in research work, data understanding, and preparation of academic documentation |
 
-## 👤 Author
+## 🎓 Academic Context
 
-**Vedant** — B.Tech CSE (2027), NMIET Pune  
-Intel Unnati Industrial Training Alumnus  
-[GitHub](https://github.com/your-username) • [LinkedIn](https://linkedin.com/in/your-profile)
+This project was developed as part of academic coursework, focusing on applying machine learning and geospatial analysis to real-world problems like accident detection and risk prediction.
+
+📌 Note: While the core system development was led by the primary developer, supporting members contributed to research, analysis, and documentation.
