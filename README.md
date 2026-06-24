@@ -1,4 +1,3 @@
-[README (1).md](https://github.com/user-attachments/files/27295569/README.1.md)
 # 🚨 Accident Prone Area Detection System
 
 An end-to-end ML web application that detects accident-prone zones on a route and predicts crash severity in real time. Built with Flask, DBSCAN clustering, and a Random Forest classifier trained on real accident data.
